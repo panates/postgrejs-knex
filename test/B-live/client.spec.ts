@@ -1,5 +1,6 @@
 import { expect } from 'expect';
 import Knex from 'knex';
+import BaseClient from 'knex/lib/client.js';
 import { Connection } from 'postgrejs';
 import { PostgrejsClient } from '../../src/index.js';
 import {
@@ -209,8 +210,19 @@ async function countBackends(db: any): Promise<number> {
   return result.rows[0].c;
 }
 
+/**
+ * Whether the installed Knex takes an external pool at all - `connectionPool`
+ * and `wrapNativePool` arrived in 3.3.0, and an older one ignores both.
+ */
+const SUPPORTS_EXTERNAL_POOL =
+  typeof (BaseClient as any).prototype.initializeExternalPool === 'function';
+
 describe('live: an external PostgreJS pool', function () {
   this.timeout(60000);
+
+  before(function () {
+    if (!SUPPORTS_EXTERNAL_POOL) this.skip();
+  });
 
   it('runs Knex on a pool the application owns', async () => {
     const pool = openPool();

@@ -102,9 +102,13 @@ Chosen deliberately, and not worth re-opening without new evidence:
   connection, rather than taking a second one out of the pool as Knex's `pg` client does.
 - **`checkVersion` reads `sessionParameters.server_version`** rather than running `select
   version()`, saving a round trip per pool.
-- **Peer range is `knex >=3.0 <4`.** The client surface this package overrides is identical across
-  3.0 to 3.3; `connectionPool`/`wrapNativePool` is the one addition, in 3.3, and it is simply never
-  called on an older version.
+- **Peer range is `knex >=3.0.1 <4`.** The client surface this package overrides is identical
+  across 3.0 to 3.3. The floor is 3.0.1 rather than 3.0.0 because 3.0.0's npm tarball is missing
+  `lib/dialects/index.js`, so `require('knex')` throws before any client is involved - knex's own
+  packaging, reproducible with nothing but `npm i knex@3.0.0 && node -e "require('knex')"`.
+  `connectionPool`/`wrapNativePool` is the one addition in the range, in 3.3, and it is simply
+  never called on an older version; the two live tests for it skip themselves when
+  `initializeExternalPool` is absent.
 
 ## Layout and tests
 

@@ -19,7 +19,7 @@ comes from Knex, so it keeps tracking Knex's own releases.
 npm install knex-postgrejs knex postgrejs
 ```
 
-`knex` (>=3.0 <4) and `postgrejs` (>=3.15 <4) are peer dependencies. Node >=22, and PostgreSQL 14 or
+`knex` (>=3.0.1 <4) and `postgrejs` (>=3.15 <4) are peer dependencies. Node >=22, and PostgreSQL 14 or
 later - 16 and 18 are what CI runs.
 
 You can uninstall `pg` and `pg-query-stream` afterwards. Nothing here imports either.

@@ -21,11 +21,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Both ends of the peer range. This job exists to notice the day the
-        # number of failures moves.
+        # 3.3.0 only, because 0 is a number that was measured on it and
+        # nothing else. The suite has not been run against the bottom of the
+        # peer range: `better-sqlite3` does not build on the machine it was
+        # tried on, and an expected-failure count nobody has seen is worse
+        # than no job at all. The lower bound is covered by test.yml, which
+        # runs this repository's own tests against 3.0.1.
         include:
-          - knex: 3.0.0
-            expected-failures: 0
           - knex: 3.3.0
             expected-failures: 0
     runs-on: ubuntu-latest

@@ -10,9 +10,9 @@
 # Everything lands in $WORK_DIR; nothing outside this repository is
 # modified. The database is Knex's own docker-compose service, on port
 # 25432, so a local PostgreSQL is left alone. It is left running at the
-# end - stop it with:
+# end - stop it, and drop its data, with:
 #
-#   docker compose -f "$WORK_DIR/knex/scripts/docker-compose.yml" down
+#   docker compose -p "$COMPOSE_PROJECT" -f "$WORK_DIR/knex/scripts/docker-compose.yml" down -v
 #
 # Usage: scripts/run-knex-suite.sh
 #   KNEX_VERSION       git tag to test against  (default: 3.3.0)
@@ -40,8 +40,16 @@ git -C "$KNEX_DIR" fetch --tags --quiet
 git -C "$KNEX_DIR" checkout --quiet -- test
 git -C "$KNEX_DIR" checkout --quiet "$KNEX_VERSION"
 
-say "Starting Knex's own PostgreSQL (port 25432)"
-COMPOSE=(docker compose -f "$KNEX_DIR/scripts/docker-compose.yml")
+# A compose project of its own per Knex version, because the server's data
+# lives in a volume that the project name decides. Knex 3.0's compose runs
+# PostgreSQL 13 and 3.3's runs 17, so sharing one project leaves the older
+# server refusing to start on the newer one's data directory - "database
+# files are incompatible with server", after a recreate that looks like it
+# worked.
+COMPOSE_PROJECT="knexsuite-$(printf '%s' "$KNEX_VERSION" | tr -c 'a-z0-9' '-')"
+
+say "Starting Knex's own PostgreSQL (port 25432), project $COMPOSE_PROJECT"
+COMPOSE=(docker compose -p "$COMPOSE_PROJECT" -f "$KNEX_DIR/scripts/docker-compose.yml")
 "${COMPOSE[@]}" up -d postgres
 # A container left over from a run that could not bind the port keeps
 # running with no published port at all, and then nothing on the host can
