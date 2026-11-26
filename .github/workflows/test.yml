@@ -1,0 +1,91 @@
+name: Test
+on:
+  # release.yml runs the tests before a release
+  workflow_call:
+
+  # Can be run manually
+  workflow_dispatch:
+
+  # Every push but to main, which gets its tests from release.yml
+  push:
+    branches-ignore:
+      - main
+
+# This workflow only reads the repository
+permissions:
+  contents: read
+
+# Only one run per branch at a time
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Node v${{ matrix.node }}, knex ${{ matrix.knex }}, PostgreSQL v${{ matrix.postgres }}
+    # A push whose commit message says no-test skips the tests
+    if: >
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, 'no-test')
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22', '24']
+        postgres: ['16', '18']
+        # Both ends of the peer range: the oldest Knex 3 and the newest.
+        knex: ['3.0.0', '3.3.0']
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres }}
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      # Checks the repository out, installs what the lockfile pins and puts rman on the PATH
+      - name: Setup Environment
+        uses: panates/gh-setup-node@v2
+        with:
+          node-version: ${{ matrix.node }}
+          rman-version: '2'
+          install: 'ci'
+
+      - name: Install the knex version under test
+        run: pnpm add -D knex@${{ matrix.knex }}
+
+      - name: Run linter test
+        run: rman lint
+
+      - name: Run circular dependency test
+        run: rman check
+
+      # Still a script: the preset builds with `tsc -b` and contributes no
+      # typecheck command, and this is the no-emit half of the same thing.
+      - name: Run type check
+        run: pnpm run typecheck
+
+      - name: Run unit tests
+        run: pnpm run citest
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGDATABASE: postgres
+
+      # The coverage badge reads Coveralls; only a public repository sends coverage there
+      - name: Send coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        # Run only once
+        if: ${{ matrix.node == '22' && matrix.postgres == '18' && matrix.knex == '3.3.0' }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}

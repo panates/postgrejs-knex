@@ -1,0 +1,40 @@
+name: Bug report
+description: Something this client does that pg does not, or does not do at all
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If the same query behaves differently here and on Knex's own `pg` client, say so - that
+        is the most useful kind of report this package can get, and it usually becomes a test in
+        `test/C-differential/`.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you ran and what came back.
+      placeholder: |
+        ```ts
+        await db('users').where('meta', { role: 'eng' });
+        ```
+        answers ... and I expected ...
+    validations:
+      required: true
+  - type: textarea
+    id: pg
+    attributes:
+      label: What `client: 'pg'` does with the same query
+      description: Leave empty if you have not tried it.
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      placeholder: knex-postgrejs 1.0.0, knex 3.3.0, postgrejs 3.15.2, Node 22, PostgreSQL 18
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Your knex configuration
+      description: The `client`, `connection` and `postgrejs` options, with the password removed.
+      render: ts

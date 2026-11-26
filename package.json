@@ -1,0 +1,87 @@
+{
+  "name": "knex-postgrejs",
+  "description": "Knex client for PostgreJS - run a Knex query builder on PostgreJS's wire-protocol client instead of pg",
+  "version": "0.0.0",
+  "author": "Panates",
+  "license": "BSD-3-Clause",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.10.1",
+  "peerDependencies": {
+    "knex": ">=3.0.0 <4",
+    "postgrejs": ">=3.15.0 <4"
+  },
+  "devDependencies": {
+    "@panates/eslint-config": "^2.3.5",
+    "@panates/eslint-config-ts": "^2.3.5",
+    "@panates/rman-preset": "^2.2.2",
+    "@panates/tsconfig": "^2.1.8",
+    "@swc-node/register": "^1.12.1",
+    "@swc/core": "^1.16.22",
+    "@swc/helpers": "^0.5.24",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "c8": "^12.0.0",
+    "dpdm": "^4.3.0",
+    "expect": "^30.5.2",
+    "globals": "^17.14.0",
+    "knex": "^3.3.0",
+    "mocha": "^12.0.3",
+    "pg": "^8.23.1",
+    "pg-query-stream": "^4.17.1",
+    "postgrejs": "^3.15.2",
+    "typescript": "^6.0.3"
+  },
+  "scripts": {
+    "test": "mocha",
+    "citest": "c8 mocha",
+    "precitest": "rman clean",
+    "lint": "rman lint",
+    "check": "rman check",
+    "format": "rman format",
+    "typecheck": "tsc -b tsconfig-build.json --noEmit",
+    "test:knex-suite": "bash scripts/run-knex-suite.sh"
+  },
+  "module": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "homepage": "https://www.postgrejs.com/",
+  "contributors": [
+    "Eray Hanoglu <e.hanoglu@panates.com>",
+    "Ilker Gurelli <i.gurelli@panates.com>",
+    "Onur Tokel <o.tokel@panates.com>",
+    "Bircan Yuruk <b.yuruk@panates.com>"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/panates/postgrejs-knex.git"
+  },
+  "keywords": [
+    "knex",
+    "knex-client",
+    "knex-dialect",
+    "objection",
+    "objectionjs",
+    "postgrejs",
+    "postgresql",
+    "postgres",
+    "sql",
+    "query-builder",
+    "typescript",
+    "wire-protocol",
+    "no-native-bindings"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
