@@ -5,15 +5,12 @@
 [![CI Tests][ci-test-image]][ci-test-url]
 [![Test Coverage][coveralls-image]][coveralls-url]
 
-A [Knex](https://knexjs.org) client for [PostgreJS](https://github.com/panates/postgrejs), the
-from-scratch PostgreSQL wire-protocol driver for Node.js. Your queries, migrations and seeds stay
-exactly as they are; what runs underneath them changes.
+A [Knex](https://knexjs.org) client for [PostgreJS](https://github.com/panates/postgrejs), a
+PostgreSQL driver written from the wire protocol up in TypeScript.
 
-Knex 3 brings no PostgreSQL driver of its own, and its client is a class. This package subclasses
-Knex's PostgreSQL client and replaces the dozen methods that open connections, run statements and
-stream rows. Everything that writes SQL - the query compiler, the schema and table compilers, the
-transaction handling - stays Knex's own, so this client speaks whatever dialect your installed Knex
-speaks.
+Nothing to compile and no native bindings, the protocol spoken in binary, and values that arrive
+as the type the column actually holds. Your queries, migrations and seeds stay exactly as they
+are.
 
 ## Install
 
@@ -23,8 +20,6 @@ npm install knex-postgrejs knex postgrejs
 
 `knex` (>=3.0.1 <4) and `postgrejs` (>=3.15 <4) are peer dependencies. Node >=22, and PostgreSQL 14
 or later - 16 and 18 are what CI runs.
-
-No native bindings, no `libpq`, nothing to compile.
 
 ## Quick start
 
@@ -40,7 +35,10 @@ const db = knex({
 await db('users').where('active', true).select('id', 'name');
 ```
 
-That is the whole change.
+Knex itself is untouched. This client subclasses Knex's PostgreSQL client and replaces only the
+methods that open connections, run statements and stream rows, so the SQL - the query compiler, the
+schema and table compilers, the transaction handling - is still Knex's own and still tracks its
+releases.
 
 ## Values
 
@@ -71,9 +69,7 @@ and `postgrejs.fetchAsString` asks the server to render particular OIDs as text.
 
 ### Connecting
 
-`connection` takes a connection string, an object, or a function returning either. The usual host,
-port, user, password, database and ssl settings work as they always have, and PostgreJS's own
-settings go in the same object:
+`connection` takes a connection string, an object, or a function returning either:
 
 ```ts
 const db = knex({
@@ -92,23 +88,8 @@ const db = knex({
 ```
 
 `hosts` and `targetSessionAttrs` are how a connection finds the current primary after a failover.
-`schema`, `timezone`, `keepAlive`, `preparedStatementCacheSize` and `asyncErrorHandling` are
-available in the same place.
-
-A few options from the `pg` world have no equivalent here, and the client warns on the log rather
-than dropping them in silence: `statement_timeout`, `query_timeout`,
-`idle_in_transaction_session_timeout`, `lock_timeout`, `options` and `types`. The server-side
-timeouts belong in `pool.afterCreate`:
-
-```ts
-pool: {
-  afterCreate(connection, done) {
-    connection
-      .query("set statement_timeout to '30s'")
-      .then(() => done(null, connection), done);
-  },
-}
-```
+`schema`, `timezone`, `keepAlive`, `sslNegotiation`, `preparedStatementCacheSize` and
+`asyncErrorHandling` are available in the same place - everything a PostgreJS `Connection` takes.
 
 ### A pool your application already owns
 
@@ -170,27 +151,19 @@ Everything this client adds goes under one key:
 knex({
   client: PostgrejsClient,
   connection: '...',
-  postgrejs: {
-    decoding: 'native',
-    inferParameterTypes: true,
-    normalizeErrors: true,
-    rollbackOnError: false,
-    prepare: undefined,
-    typeMap: undefined,
-    fetchAsString: [],
-  },
+  postgrejs: { prepare: false },
 });
 ```
 
-| Option                | Default    | What it does                                                        |
-| --------------------- | ---------- | ------------------------------------------------------------------- |
-| `decoding`            | `'native'` | `'pg'` narrows the decoded types - see "Moving from pg"              |
-| `inferParameterTypes` | `true`     | Leaves each parameter's type to the server to resolve from context   |
-| `normalizeErrors`     | `true`     | Strips the caret diagram from an error's `message`                   |
-| `rollbackOnError`     | `false`    | PostgreSQL's own rule: a failed statement aborts the transaction     |
-| `prepare`             | unset      | `false` turns off the per-connection prepared statement cache        |
-| `typeMap`             | unset      | A `DataTypeMap`, to change how one type is decoded                   |
-| `fetchAsString`       | unset      | Further OIDs to have the server render as text                       |
+| Option                | Default    | What it does                                                       |
+| --------------------- | ---------- | ------------------------------------------------------------------ |
+| `decoding`            | `'native'` | `'pg'` asks for a narrower set of types - see the migration guide   |
+| `inferParameterTypes` | `true`     | Leaves each parameter's type to the server to resolve from context  |
+| `normalizeErrors`     | `true`     | Strips the caret diagram from an error's `message`                  |
+| `rollbackOnError`     | `false`    | PostgreSQL's own rule: a failed statement aborts the transaction    |
+| `prepare`             | unset      | `false` turns off the per-connection prepared statement cache       |
+| `typeMap`             | unset      | A `DataTypeMap`, to change how one type is decoded                  |
+| `fetchAsString`       | unset      | Further OIDs to have the server render as text                      |
 
 Two are worth a sentence beyond the table.
 
@@ -205,37 +178,9 @@ leaving it on is that a parameter with no context at all resolves to `text`: `db
 transaction and only a rollback is accepted after it. PostgreJS defaults the other way, wrapping
 each statement in a savepoint of its own; `true` opts into that.
 
-## Moving from pg
-
-Replace `client: 'pg'` with `client: PostgrejsClient` and uninstall `pg` and `pg-query-stream`;
-nothing here imports either. A handful of connection options are spelled differently and are
-translated for you: `application_name` and `fallback_application_name` become `applicationName`,
-`connectionTimeoutMillis` becomes `connectTimeoutMs`, and a port that arrives as a string is read
-as a number.
-
-What your code reads changes in two places.
-
-**Decoded types.** `bigint`, `numeric`, `money` and the range types reach you as JavaScript types
-rather than strings. If that means auditing every model, `decoding: 'pg'` asks the server to render
-those columns as text instead, which gives the narrower set `pg` hands back:
-
-```ts
-postgrejs: { decoding: 'pg' }
-```
-
-It is a migration aid rather than somewhere to settle: that path pays for a round of text parsing
-and gives up the precision the default keeps. `test/C-differential/values.spec.ts` holds it to
-`pg`'s answer across 63 column types, so it can be relied on while it is needed.
-
-Two types stay different even then. `point` and `circle` arrive as `Point` and `Circle`, `interval`
-as an `Interval` - the same fields under the same names, and the same `JSON.stringify` output, in a
-class that also renders itself as `(1,2)` rather than `[object Object]`.
-
-**Result objects.** `knex.raw()` answers `command`, `rowCount`, `rows` and `fields`, plus
-`commandTag`, the full command tag (`CREATE INDEX` rather than `CREATE`). `fields` carries the
-familiar `name`, `tableID` and `dataTypeID` along with PostgreJS's `dataTypeName`, `jsType` and
-`isArray`. Errors are unchanged, field for field, down to `code`, `constraint`, `detail`, `table`
-and `column`.
+**`prepare`** follows the connection's own setting unless you set it. `false` is what PgBouncer in
+transaction pooling mode needs before 1.21, where a named statement does not survive to the next
+call.
 
 ## Objection
 
@@ -252,19 +197,20 @@ Model.knex(knex({ client: PostgrejsClient, connection: '...' }));
 ## Tested against Knex's own suite
 
 `scripts/run-knex-suite.sh` checks Knex out at a known version, points its `postgres` variant at
-this client and runs the whole thing on Knex's own database. On Knex 3.3.0 it passes **494 of 494,
-with 56 pending** - the same three numbers Knex's own client scores on the same checkout, which is
-the comparison that matters.
+this client and runs the whole thing on Knex's own database. On Knex 3.3.0 it passes **all 494 of
+them, with 56 pending** - the full count that suite scores.
 
-The suite runs in `decoding: 'pg'`, because its assertions spell out `pg`'s own JavaScript types
-(`sum: '15'`, `id: '2'`). What it is there to check is the SQL and the behaviour; which type a
-`bigint` decodes to is this package's own question, and its own tests answer it.
-
-The run leaves out the two sqlite dialect specs. They build a sqlite Knex while mocha is still
-loading files, whatever `DB` is set to, so an unbuildable `better-sqlite3` fails nine tests that
-have nothing to do with this client.
+It runs in `decoding: 'pg'`, because its assertions spell out the JavaScript types the older driver
+produces. What the suite is there to check is the SQL and the behaviour; which type a `bigint`
+decodes to is this package's own question, and its own tests answer it.
 
 A weekly workflow runs the same thing, to notice a change in Knex rather than in this repository.
+
+## Moving an existing project
+
+[docs/MIGRATION-pg-to-postgrejs.md](https://github.com/panates/postgrejs-knex/blob/main/docs/MIGRATION-pg-to-postgrejs.md)
+covers it: the option spellings that differ, what the decoded values become, and the one setting
+that keeps the old ones while you work through your models.
 
 ## Development
 
@@ -284,8 +230,8 @@ The tests come in three kinds:
   client passes, in what order, and how it shapes what comes back.
 - `test/B-live` - against a real server: decoding, streaming, cancellation asserted against
   `pg_stat_activity`, an external PostgreJS pool, the search path, the pool hooks.
-- `test/C-differential` - the `decoding: 'pg'` mode run beside Knex's own client on the same
-  server, compared value for value.
+- `test/C-differential` - the `decoding: 'pg'` mode run beside Knex's built-in client on the same
+  server, compared value for value, which is what holds the migration guide's table honest.
 
 The live tests need a PostgreSQL on `127.0.0.1:5432` (`postgres`/`postgres`, database `postgres`);
 the docker compose in the PostgreJS repository is one.

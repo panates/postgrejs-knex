@@ -31,7 +31,7 @@ const RANGE_OIDS: number[] = [
  * Only that opt-in mode uses this list. The default decodes everything
  * natively and asks for nothing as text.
  *
- * @see {@link ../README.md} "Moving from pg", and
+ * @see {@link ../docs/MIGRATION-pg-to-postgrejs.md}, and
  * `test/C-differential/values.spec.ts`, which holds every entry to `pg`'s
  * own answer.
  */

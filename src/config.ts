@@ -17,17 +17,23 @@ export interface PostgrejsOptions {
   /**
    * What values come back as.
    *
-   * - `'pg'`, the default - what `pg` returns, type for type. `numeric`
-   *   and `bigint` are strings, `money` keeps the server's own `$12.34`,
-   *   ranges are strings, dates are `Date`s. This is what existing Knex
-   *   code, and every Objection model written against it, already expects.
-   * - `'native'` - PostgreJS's own decoding, which is richer and is the
-   *   reason to use PostgreJS at all: a `BigInt` past 2^53, a `Numeric`
-   *   that keeps every digit, typed geometric and `Range` classes.
+   * - `'native'`, the default - PostgreJS's own decoding. A `bigint`
+   *   arrives as a `BigInt` once it passes 2^53, a `numeric` as a
+   *   `Numeric` once a double cannot hold it, a range as a `Range`, a
+   *   `point` as a `Point`. Nothing is flattened to a string on the way
+   *   out.
+   * - `'pg'` - the narrower set of JavaScript types the older driver
+   *   produces, for code being moved onto this one that reads `bigint`
+   *   and `numeric` as strings and would otherwise need changing in
+   *   every model.
    *
-   * `'native'` changes what your existing queries return, so it is opt-in
-   * rather than the default. The README's "What changes when you switch"
-   * table lists every type it moves.
+   * `'pg'` is a way to land the switch in one commit and deal with the
+   * types in the next, rather than a mode to settle on: it asks the
+   * server to render those columns as text, which is both a round of
+   * parsing and a loss of precision that the default does not pay.
+   *
+   * @see {@link ../docs/MIGRATION-pg-to-postgrejs.md} for the whole
+   * table of what moves.
    */
   decoding?: 'pg' | 'native';
 

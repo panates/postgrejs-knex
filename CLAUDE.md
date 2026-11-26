@@ -121,6 +121,13 @@ Chosen deliberately, and not worth re-opening without new evidence:
 `src/` is eight files: the client, its options, the parameter and result conversions, the error
 normalisation, the connection-settings translation, the cursor stream, and the Knex import.
 
+The README describes the package; everything comparative lives in
+`docs/MIGRATION-pg-to-postgrejs.md`. That split is deliberate and worth keeping: the README was
+rewritten twice because it read as an addendum to `pg` - not from the word count, which was
+already low the second time, but from the shape, where every section explained this package by
+saying what `pg` does first. A new option gets documented by what it does here, and the `pg`
+sentence, if it needs one, goes in the migration guide.
+
 - `test/A-common/` - unit tests against the fakes in `test/_support/fakes.ts`. Which options the
   client passes, in what order, and how it shapes what comes back, with no server deciding any of
   it.
