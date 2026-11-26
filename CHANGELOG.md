@@ -1,5 +1,13 @@
 # Changelog
-<!-- rman:documented-up-to fa330cb5f9cbb932f68c02fb430545f6abffef26 -->
+<!-- rman:documented-up-to f6600905dc2c8f999fc84bac8f971722707bd037 -->
+
+## v1.0.1 (2026-11-26)
+
+### 🐛 Bug Fixes
+
+- decode natively by default (f660090)
+
+---
 
 ## v1.0.0 (2026-11-26)
 
