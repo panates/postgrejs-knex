@@ -26,10 +26,14 @@ const RANGE_OIDS: number[] = [
 /**
  * The OIDs `decoding: 'pg'` asks the server to render as text, because
  * `pg`'s own value for them is a string and PostgreJS decodes them into
- * something else.
+ * something richer.
  *
- * @see {@link ../README.md} "What changes when you switch" for the whole
- * table, which `test/C-differential/values.spec.ts` keeps honest.
+ * Only that opt-in mode uses this list. The default decodes everything
+ * natively and asks for nothing as text.
+ *
+ * @see {@link ../README.md} "Moving from pg", and
+ * `test/C-differential/values.spec.ts`, which holds every entry to `pg`'s
+ * own answer.
  */
 /* The same list `typeorm-postgrejs` arrived at by measuring 64 scalar and
    array types, re-measured here against `pg` through Knex rather than

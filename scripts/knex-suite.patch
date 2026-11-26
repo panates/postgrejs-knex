@@ -1,14 +1,19 @@
 diff --git a/test/knexfile.js b/test/knexfile.js
-index 112249a0..a203bf1e 100644
+index 112249a0..1ea56b77 100644
 --- a/test/knexfile.js
 +++ b/test/knexfile.js
-@@ -124,7 +124,8 @@ const testConfigs = {
+@@ -124,7 +124,13 @@ const testConfigs = {
    },
  
    postgres: {
 -    client: 'postgres',
-+    // knex-postgrejs: the suite's postgres variant, on PostgreJS instead of pg
++    // knex-postgrejs: the suite's postgres variant, on PostgreJS instead of pg.
++    // `decoding: 'pg'` because this suite asserts pg's own JavaScript types -
++    // `sum: '15'`, `id: '2'` - and what it is here to check is the SQL and the
++    // behaviour, not which type a bigint decodes to. The default decoding is
++    // covered by this package's own tests.
 +    client: require('knex-postgrejs').PostgrejsClient,
++    postgrejs: { decoding: 'pg' },
      connection: testConfig.postgres || {
        adapter: 'postgresql',
        port: 25432,

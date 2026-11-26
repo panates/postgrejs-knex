@@ -1,10 +1,15 @@
 import Knex, { type Knex as KnexType } from 'knex';
-import { PostgrejsClient } from '../../src/index.js';
+import { PostgrejsClient, type PostgrejsOptions } from '../../src/index.js';
 import { connectionSettings } from './live.js';
 
 /**
  * The same Knex calls, run through Knex's own `pg` client and through
  * this one, on the same server.
+ *
+ * This is what holds `decoding: 'pg'` to its promise, so that is the mode
+ * these suites run in unless one of them says otherwise. The default
+ * decoding is PostgreJS's own and is not meant to match `pg` - what it
+ * answers is pinned in `test/B-live` instead.
  *
  * Knex's own suite is the broader instrument, but it asserts only what
  * its authors thought to write down - it says nothing about what a
@@ -72,12 +77,18 @@ export function comparableResult(result: any): unknown {
 
 export async function openDifferential(
   schemaName: string,
+  options: PostgrejsOptions = { decoding: 'pg' },
 ): Promise<Differential> {
   const connection = connectionSettings();
   const pool = { min: 0, max: 4 };
   const dbs = {
     pg: Knex({ client: 'pg', connection, pool }),
-    pgjs: Knex({ client: PostgrejsClient as any, connection, pool } as any),
+    pgjs: Knex({
+      client: PostgrejsClient as any,
+      connection,
+      pool,
+      postgrejs: options,
+    } as any),
   };
   let ddl: string[] = [];
 

@@ -77,10 +77,16 @@ tarn, so a PostgreJS `Pool` is only involved when the application passes one as 
 
 Chosen deliberately, and not worth re-opening without new evidence:
 
-- **`decoding: 'pg'` is the default.** Knex is a drop-in context: existing queries and Objection
-  models were written against `pg`'s values. `'native'` is the opt-in. The `fetchAsString` list in
-  `src/constants.ts` is what makes `'pg'` work, and every entry on it is covered by
-  `test/C-differential/values.spec.ts` - 58 of 63 types identical, 5 the same fields in a class.
+- **`decoding: 'native'` is the default**, and `'pg'` is the migration aid. Someone reaching for
+  PostgreJS is not asking for `pg`'s answers, and the narrower mode costs a round of text parsing
+  and the precision the default keeps. It was the other way round until Eray pointed out that the
+  default contradicted the reason to install this package at all.
+  - Native means one rule for `numeric` and `int8` alike: a plain number while that is lossless, a
+    `Numeric` or a `BigInt` when it is not. `count()` comes back as a number, not a string.
+  - The `fetchAsString` list in `src/constants.ts` is what makes `'pg'` work, and every entry is
+    covered by `test/C-differential/values.spec.ts` - 58 of 63 types identical to `pg`, 5 the same
+    fields in a class. That suite runs in `decoding: 'pg'` for exactly this reason; what the
+    default answers is pinned in `test/B-live/client.spec.ts` instead.
 - **Parameter types are left to the server** for numbers, booleans, bigints, nulls and plain
   objects; `inferParameterTypes: false` opts out. Measured, not reasoned: without it,
   `where('txt', 42)` and `where('jb', { a: 1 })` both fail.
@@ -120,10 +126,10 @@ normalisation, the connection-settings translation, the cursor stream, and the K
   it.
 - `test/B-live/` - against a live PostgreSQL: streaming, cancellation asserted against
   `pg_stat_activity`, an external PostgreJS pool, the search path, the pool hooks, the password.
-- `test/C-differential/` - the same calls through Knex's own `pg` client and through this one, on
-  the same server, compared value for value. The README's tables are this directory. The harness
-  rebuilds the schema between the two runs, so both start from the same state - a comparison that
-  runs both drivers against shared state measures the order they ran in.
+- `test/C-differential/` - the same calls through Knex's own `pg` client and through this one in
+  `decoding: 'pg'`, on the same server, compared value for value. The harness rebuilds the schema
+  between the two runs, so both start from the same state - a comparison that runs both drivers
+  against shared state measures the order they ran in.
 - Code style follows the PostgreJS repository's own `CLAUDE.md`: member order, `protected` over
   `private`, TSDoc for the contract and a plain block comment underneath for the reasoning.
 - Lint, format, check, clean and build are rman commands from `@panates/rman-preset`, not package
@@ -139,12 +145,23 @@ normalisation, the connection-settings translation, the cursor stream, and the K
 points its `postgres` variant at us (`scripts/knex-suite.patch`), and uses Knex's own compose
 database on port 25432, so a local server is untouched.
 
-Two things the script had to learn:
+The patch also sets `decoding: 'pg'` for that variant. The suite asserts `pg`'s own JavaScript
+types - `sum: '15'`, `id: '2'` - so under the default decoding eleven of its tests fail on the
+type rather than on anything this client does. Recording those as expected failures would have
+hidden a real regression behind the number.
+
+Three things the script had to learn:
 
 - **The install cannot skip scripts.** Knex's suite loads its sqlite specs whatever `DB` is set to,
   and an unbuilt `sqlite3` takes the run down before a single postgres test starts.
 - **mocha can exit 0 having run nothing.** The script fails when the log reports no passing count at
   all, because a run that fell over on load otherwise reads as a pass.
+- **The database is per version, the port is not.** Each Knex version gets its own compose project,
+  because 3.0's compose runs PostgreSQL 13 and 3.3's runs 17 and one shared project leaves the
+  older server refusing the newer one's data directory. The port 25432 is still shared, so a
+  container left running by another version is stopped first. The port is read from the compose
+  file rather than asked of compose, which answered `0.0.0.0:0` for a container it had just
+  started.
 
 ## Build and release
 

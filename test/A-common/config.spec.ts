@@ -3,18 +3,22 @@ import { DataTypeOIDs } from 'postgrejs';
 import { FETCH_AS_STRING_OIDS, resolveOptions } from '../../src/index.js';
 
 describe('config', () => {
-  it('decodes like pg when nothing says otherwise', () => {
-    expect(resolveOptions(undefined).fetchAsString).toBe(FETCH_AS_STRING_OIDS);
-  });
-
-  it('asks for nothing as text under native decoding', () => {
+  it('decodes natively when nothing says otherwise', () => {
+    expect(resolveOptions(undefined).fetchAsString).toBeUndefined();
     expect(
       resolveOptions({ decoding: 'native' }).fetchAsString,
     ).toBeUndefined();
   });
 
+  it('asks for the pg list only when pg decoding was asked for', () => {
+    expect(resolveOptions({ decoding: 'pg' }).fetchAsString).toBe(
+      FETCH_AS_STRING_OIDS,
+    );
+  });
+
   it('appends extra OIDs to the pg list rather than replacing it', () => {
     const fetchAsString = resolveOptions({
+      decoding: 'pg',
       fetchAsString: [DataTypeOIDs.oid],
     }).fetchAsString!;
     expect(fetchAsString).toHaveLength(FETCH_AS_STRING_OIDS.length + 1);
@@ -23,10 +27,7 @@ describe('config', () => {
 
   it('asks for only the extra OIDs under native decoding', () => {
     expect(
-      resolveOptions({
-        decoding: 'native',
-        fetchAsString: [DataTypeOIDs.oid],
-      }).fetchAsString,
+      resolveOptions({ fetchAsString: [DataTypeOIDs.oid] }).fetchAsString,
     ).toEqual([DataTypeOIDs.oid]);
   });
 
