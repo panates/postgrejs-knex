@@ -48,26 +48,50 @@ git -C "$KNEX_DIR" checkout --quiet "$KNEX_VERSION"
 # worked.
 COMPOSE_PROJECT="knexsuite-$(printf '%s' "$KNEX_VERSION" | tr -c 'a-z0-9' '-')"
 
+# Knex's compose file hard-codes port 25432, so only one version's database
+# can listen at a time however the projects are named. A container left
+# running by another version's run is stopped rather than left to fail the
+# bind; its data stays in its own volume, so that version runs again without
+# reinitialising.
+for leftover in $(docker ps --filter "publish=25432" --format '{{.Names}}' 2>/dev/null); do
+  case "$leftover" in
+    "$COMPOSE_PROJECT"-*) ;;
+    *)
+      say "Stopping $leftover, which holds port 25432"
+      docker stop "$leftover" >/dev/null
+      ;;
+  esac
+done
+
 say "Starting Knex's own PostgreSQL (port 25432), project $COMPOSE_PROJECT"
 COMPOSE=(docker compose -p "$COMPOSE_PROJECT" -f "$KNEX_DIR/scripts/docker-compose.yml")
+# The port is read from the compose file rather than asked of compose,
+# which answered "0.0.0.0:0" for a container it had only just started and
+# sent the readiness loop to a port nothing listens on.
+PG_HOST_PORT=25432
+
+wait_for_postgres() {
+  local _
+  for _ in $(seq 1 60); do
+    nc -z 127.0.0.1 "$PG_HOST_PORT" >/dev/null 2>&1 && return 0
+    sleep 1
+  done
+  return 1
+}
+
 "${COMPOSE[@]}" up -d postgres
 # A container left over from a run that could not bind the port keeps
 # running with no published port at all, and then nothing on the host can
 # reach it - recreate it rather than let the suite wait for a timeout.
-if ! "${COMPOSE[@]}" port postgres 5432 >/dev/null 2>&1; then
+if ! wait_for_postgres; then
+  say "Nothing answering on $PG_HOST_PORT, recreating the container"
   "${COMPOSE[@]}" up -d --force-recreate postgres
+  wait_for_postgres ||
+    {
+      echo "postgres did not start listening on 127.0.0.1:$PG_HOST_PORT" >&2
+      exit 1
+    }
 fi
-PG_HOST_PORT="$("${COMPOSE[@]}" port postgres 5432 | sed 's/.*://')"
-: "${PG_HOST_PORT:?the postgres container published no host port}"
-ready=
-for _ in $(seq 1 60); do
-  if nc -z 127.0.0.1 "$PG_HOST_PORT" >/dev/null 2>&1; then
-    ready=1
-    break
-  fi
-  sleep 1
-done
-: "${ready:?postgres did not start listening on 127.0.0.1:$PG_HOST_PORT}"
 
 # Install scripts have to run: Knex's suite loads its sqlite specs whatever
 # DB is set, and an unbuilt sqlite3 takes the whole run down before a single

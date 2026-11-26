@@ -82,7 +82,7 @@ describe('live: streaming', function () {
     // The cursor and its connection went back to the pool rather than
     // staying open mid-result, so the pool still answers.
     await new Promise(resolve => setTimeout(resolve, 100));
-    expect(await live.db(t).count('* as c')).toEqual([{ c: '1000' }]);
+    expect(await live.db(t).count('* as c')).toEqual([{ c: 1000 }]);
   });
 
   it('reports a server error on the stream', async () => {

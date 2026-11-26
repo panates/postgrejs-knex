@@ -122,7 +122,7 @@ describe('live: client', function () {
       const result = await db.raw('show search_path');
       expect(result.rows[0].search_path).toContain('live_client');
       // An unqualified name now resolves inside that schema.
-      expect(await db('t').count('* as c')).toEqual([{ c: '2' }]);
+      expect(await db('t').count('* as c')).toEqual([{ c: 2 }]);
     } finally {
       await db.destroy();
     }
@@ -160,17 +160,56 @@ describe('live: client', function () {
     expect(await countBackends(live.db)).toBeLessThan(before);
   });
 
-  it('decodes natively when asked to', async () => {
-    const db = openKnex({ decoding: 'native' });
-    try {
-      const result = await db.raw(
-        'select 9007199254740993::int8 as big, 12.34::numeric as n',
-      );
-      expect(result.rows[0].big).toBe(9007199254740993n);
-      expect(typeof result.rows[0].n).not.toBe('string');
-    } finally {
-      await db.destroy();
-    }
+  describe('decoding', () => {
+    it('reads a bigint past 2^53 without losing a digit', async () => {
+      const result = await live.db.raw('select 9007199254740993::int8 as v');
+      expect(result.rows[0].v).toBe(9007199254740993n);
+    });
+
+    it('reads a numeric a double holds exactly as a number', async () => {
+      const result = await live.db.raw('select 12.3456789::numeric as v');
+      expect(result.rows[0].v).toBe(12.3456789);
+    });
+
+    it('reads a numeric a double cannot hold without dropping a digit', async () => {
+      // The same rule int8 follows: a plain number while that is lossless,
+      // and a type that keeps every digit when it is not.
+      const literal = '123456789012345678901234567890.123456789';
+      const result = await live.db.raw(`select '${literal}'::numeric as v`);
+      expect(typeof result.rows[0].v).not.toBe('number');
+      expect(String(result.rows[0].v)).toBe(literal);
+    });
+
+    it('reads a range as a Range', async () => {
+      const result = await live.db.raw("select '[1,5)'::int4range as v");
+      expect(result.rows[0].v.constructor.name).toBe('Range');
+    });
+
+    it('reads a point as a Point', async () => {
+      const result = await live.db.raw("select '(1,2)'::point as v");
+      expect(result.rows[0].v).toMatchObject({ x: 1, y: 2 });
+      expect(String(result.rows[0].v)).toBe('(1,2)');
+    });
+
+    it('counts with a number rather than a string', async () => {
+      // PostgreJS decodes int8 as a number inside the safe integer range
+      // and a BigInt beyond it, so an ordinary count is arithmetic-ready.
+      const [{ c }] = await live.db('live_client.t').count('* as c');
+      expect(c).toBe(2);
+    });
+
+    it('hands back pg’s narrower types when asked to', async () => {
+      const db = openKnex({ decoding: 'pg' });
+      try {
+        const result = await db.raw(
+          'select 9007199254740993::int8 as big, 12.34::numeric as n',
+        );
+        expect(result.rows[0].big).toBe('9007199254740993');
+        expect(result.rows[0].n).toBe('12.34');
+      } finally {
+        await db.destroy();
+      }
+    });
   });
 
   it('runs without the prepared statement cache when asked to', async () => {

@@ -9,7 +9,7 @@ import { FETCH_AS_STRING_OIDS } from './constants.js';
  * const db = knex({
  *   client: PostgrejsClient,
  *   connection: 'postgres://localhost:5432/mydb',
- *   postgrejs: { decoding: 'native' },
+ *   postgrejs: { prepare: false },
  * });
  * ```
  */
@@ -116,7 +116,7 @@ export function resolveOptions(
   options: PostgrejsOptions | undefined,
 ): ResolvedPostgrejsOptions {
   const given = options ?? {};
-  const pgDecoding = given.decoding !== 'native';
+  const pgDecoding = given.decoding === 'pg';
   const extra = given.fetchAsString;
   let fetchAsString: FetchAsStringItem[] | undefined;
   if (pgDecoding)

@@ -54,16 +54,16 @@ describe('client', () => {
       expect(options.rollbackOnError).toBe(false);
     });
 
-    it('asks for the pg decoding list by default', async () => {
+    it('asks for nothing as text by default', async () => {
       const options = await optionsOf(makeClient(), { sql: 'select 1' });
-      expect(options.fetchAsString).toBe(FETCH_AS_STRING_OIDS);
+      expect(options.fetchAsString).toBeUndefined();
     });
 
-    it('asks for nothing as text under native decoding', async () => {
-      const options = await optionsOf(makeClient({ decoding: 'native' }), {
+    it('asks for the pg decoding list when pg decoding was asked for', async () => {
+      const options = await optionsOf(makeClient({ decoding: 'pg' }), {
         sql: 'select 1',
       });
-      expect(options.fetchAsString).toBeUndefined();
+      expect(options.fetchAsString).toBe(FETCH_AS_STRING_OIDS);
     });
 
     it('passes prepare through when it was configured', async () => {
@@ -156,14 +156,14 @@ describe('client', () => {
 
   describe('the client of a transaction', () => {
     it('reads its options from config, which is all Knex copies', async () => {
-      const client = makeClient({ decoding: 'native' });
+      const client = makeClient({ decoding: 'pg' });
       // What `makeTxClient` builds: no constructor runs, and only a handful
       // of named fields are carried over.
       const trxClient: any = Object.create(client.constructor.prototype);
       trxClient.config = client.config;
       trxClient.logger = client.logger;
       const options = await optionsOf(trxClient, { sql: 'select 1' });
-      expect(options.fetchAsString).toBeUndefined();
+      expect(options.fetchAsString).toBe(FETCH_AS_STRING_OIDS);
       expect(options.rowDecoder).toBe('object');
     });
   });

@@ -7,11 +7,12 @@ import {
 
 /**
  * Every column type, read back through Knex's own `pg` client and through
- * this one, and compared value for value.
+ * this one in `decoding: 'pg'`, and compared value for value.
  *
- * This is what the README's "What changes when you switch" table is: a
- * type that moves between the two lists fails a test here rather than
- * going unnoticed until someone reads a row.
+ * That mode exists for code being moved off `pg`, and this is what holds
+ * it to its promise: a type that stops matching fails here rather than
+ * going unnoticed until someone reads a row. What the *default* decoding
+ * answers is a different question, pinned in `test/B-live`.
  */
 describe('differential: values', function () {
   this.timeout(120000);
@@ -136,23 +137,12 @@ describe('differential: values', function () {
     });
   }
 
-  it('reads int8 as a string, as pg does, under the default decoding', async () => {
+  it('reads a count as the string pg reads', async () => {
     const { pg, pgjs } = await d.readOnly(async db => {
       const result = await db.raw('select count(*) as c from pg_class');
       return typeof result.rows[0].c;
     });
     expect(pg).toBe('string');
     expect(pgjs).toBe('string');
-  });
-
-  it('reads int8 natively when asked to, which is the point of PostgreJS', async () => {
-    const { Knex } = await import('../_support/native.js');
-    const db = Knex();
-    try {
-      const result = await db.raw('select 9007199254740993::int8 as v');
-      expect(result.rows[0].v).toBe(9007199254740993n);
-    } finally {
-      await db.destroy();
-    }
   });
 });
