@@ -1,0 +1,49 @@
+name: Knex suite
+on:
+  # Can be run manually
+  workflow_dispatch:
+
+  # Weekly, to notice a change in Knex rather than in this repository
+  schedule:
+    - cron: '0 6 * * 1'
+
+# Only one run at a time
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  suite:
+    name: Knex ${{ matrix.knex }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Both ends of the peer range. This job exists to notice the day the
+        # number of failures moves.
+        include:
+          - knex: 3.0.0
+            expected-failures: 0
+          - knex: 3.3.0
+            expected-failures: 0
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      # `@v2` checks out itself, installs from the lockfile and puts rman on
+      # the PATH - which the suite script needs, since it builds this client
+      # with `rman build` before pointing Knex at it.
+      - name: Setup Environment
+        uses: panates/gh-setup-node@v2
+        with:
+          node-version: '22'
+          rman-version: '2'
+          install: 'ci'
+
+      - name: Run Knex's own suite against this client
+        run: scripts/run-knex-suite.sh
+        env:
+          KNEX_VERSION: ${{ matrix.knex }}
+          EXPECTED_FAILURES: ${{ matrix.expected-failures }}
+          WORK_DIR: ${{ runner.temp }}/knex-suite
