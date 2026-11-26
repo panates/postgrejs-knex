@@ -1,5 +1,13 @@
 # Changelog
-<!-- rman:documented-up-to f6600905dc2c8f999fc84bac8f971722707bd037 -->
+<!-- rman:documented-up-to 7d4b72b59c90b7eb3a4ec88952e08820c5df8952 -->
+
+## v1.0.2 (2026-11-26)
+
+### 📚 Documentation
+
+- write the README around the package, not around pg (7d4b72b)
+
+---
 
 ## v1.0.1 (2026-11-26)
 

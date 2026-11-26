@@ -1,7 +1,7 @@
 {
   "name": "knex-postgrejs",
   "description": "Knex client for PostgreJS - run a Knex query builder on PostgreJS's wire-protocol client instead of pg",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "Panates",
   "license": "BSD-3-Clause",
   "private": true,
