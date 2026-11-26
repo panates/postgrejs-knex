@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: PostgreJS itself
+    url: https://github.com/panates/postgrejs/issues
+    about: Anything about the driver underneath - decoding, the protocol, the pool.
+  - name: Knex
+    url: https://github.com/knex/knex/issues
+    about: Anything about the SQL Knex writes, which this package does not change.

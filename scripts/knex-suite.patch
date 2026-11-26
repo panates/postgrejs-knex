@@ -1,0 +1,14 @@
+diff --git a/test/knexfile.js b/test/knexfile.js
+index 112249a0..a203bf1e 100644
+--- a/test/knexfile.js
++++ b/test/knexfile.js
+@@ -124,7 +124,8 @@ const testConfigs = {
+   },
+ 
+   postgres: {
+-    client: 'postgres',
++    // knex-postgrejs: the suite's postgres variant, on PostgreJS instead of pg
++    client: require('knex-postgrejs').PostgrejsClient,
+     connection: testConfig.postgres || {
+       adapter: 'postgresql',
+       port: 25432,
