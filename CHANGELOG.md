@@ -1,5 +1,13 @@
 # Changelog
-<!-- rman:documented-up-to a27bc9bddfd0b752ad17efca3dbde375dada65be -->
+<!-- rman:documented-up-to d18488ee218fd6477accd38fc31e28c8e1d9fc9e -->
+
+## v1.0.4 (2026-11-27)
+
+### 📚 Documentation
+
+- read the coverage badge from main, not dev (de02e5b)
+
+---
 
 ## v1.0.3 (2026-11-27)
 
