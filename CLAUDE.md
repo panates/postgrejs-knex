@@ -192,6 +192,8 @@ Single-package: the repository *is* the package. `.rmanrc.yml` inherits `@panate
   package's job: Knex mutates what it is handed and spells its options `pg`'s way, and neither is
   something PostgreJS should change.
 - Do not sign commits or pull requests on the assistant's behalf.
+- A handoff note between sessions goes to `.claude/local/handoff.md` (git-ignored); a new
+  session reads it first.
 - Run `git status` before staging. Commit only the files the change is about.
 - Every change comes with a test.
 - Claims about how another library behaves get checked against that library's own source, not its
