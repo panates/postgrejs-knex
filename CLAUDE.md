@@ -55,8 +55,8 @@ The facts below were measured against a live server on PostgreJS 3.15, not recal
 
 **A result carries `command` (the whole tag), `fields`, `rows` and `rowsAffected`.** `rowsAffected`
 is set for INSERT/UPDATE/DELETE/MERGE only, so `rowCount` is rebuilt in `src/result.ts` from the
-command - see the note there, and `../postgrejs/.claude/command-tag-row-count.md` for the part that
-cannot be rebuilt.
+command - see the note there, and `../postgrejs/.claude/local/command-tag-row-count.md` for the
+part that cannot be rebuilt.
 
 **Parameters are `$1`-style**, passed as `options.params`, so Knex's compiled SQL needs no
 rewriting - but their types matter. PostgreJS sends strings, dates and arrays of numbers or strings
@@ -183,8 +183,8 @@ Single-package: the repository *is* the package. `.rmanrc.yml` inherits `@panate
 - **No fixups here. A gap in PostgreJS is reported, not worked around.** When something this client
   needs is missing, wrong or slower in `postgrejs`, do not patch around it: no post-decode value
   rewriting, no shim, no vendored parser, no monkey-patching of the client. Write the finding up as
-  a task file in `../postgrejs/.claude/<short-name>.md` - what was asked of the client, what it
-  answered, what it should answer, and the smallest reproduction that shows the difference. That
+  a task file in `../postgrejs/.claude/local/<short-name>.md` - what was asked of the client, what
+  it answered, what it should answer, and the smallest reproduction that shows the difference. That
   repository's own session fixes it at the source. A workaround is allowed only when the user is
   asked for one and says yes; it then carries a comment naming the task file it waits on.
   `command-tag-row-count.md` is the one open finding.
@@ -192,6 +192,8 @@ Single-package: the repository *is* the package. `.rmanrc.yml` inherits `@panate
   package's job: Knex mutates what it is handed and spells its options `pg`'s way, and neither is
   something PostgreJS should change.
 - Do not sign commits or pull requests on the assistant's behalf.
+- A handoff note between sessions goes to `.claude/local/handoff.md` (git-ignored); a new
+  session reads it first.
 - Run `git status` before staging. Commit only the files the change is about.
 - Every change comes with a test.
 - Claims about how another library behaves get checked against that library's own source, not its
