@@ -1,5 +1,21 @@
 # Changelog
-<!-- rman:documented-up-to 7d4b72b59c90b7eb3a4ec88952e08820c5df8952 -->
+<!-- rman:documented-up-to a27bc9bddfd0b752ad17efca3dbde375dada65be -->
+
+## v1.0.3 (2026-11-27)
+
+### 📚 Documentation
+
+- point the postgrejs note links at .claude/local/ (a7b9f7c)
+
+### 🤖 Continuous Integration
+
+- send coverage to Coveralls from the release, not the test run (d963a6d)
+
+### 🧹 Chores
+
+- keep the session handoff note in .claude/local/ (15e1169)
+
+---
 
 ## v1.0.2 (2026-11-26)
 
