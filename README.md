@@ -246,5 +246,5 @@ BSD-3-Clause
 [downloads-url]: https://npmjs.org/package/knex-postgrejs
 [ci-test-image]: https://github.com/panates/postgrejs-knex/actions/workflows/test.yml/badge.svg
 [ci-test-url]: https://github.com/panates/postgrejs-knex/actions/workflows/test.yml
-[coveralls-image]: https://img.shields.io/coveralls/panates/postgrejs-knex/dev.svg
+[coveralls-image]: https://img.shields.io/coveralls/panates/postgrejs-knex/main.svg
 [coveralls-url]: https://coveralls.io/r/panates/postgrejs-knex
