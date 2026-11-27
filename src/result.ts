@@ -144,8 +144,8 @@ function toFieldInfo(
    and return no rows, so `pg` reports a number here and this reports
    `null`. PostgreJS discards the count for every command but the four it
    calls affected, and there is nothing left to read it from - written up in
-   `../postgrejs/.claude/command-tag-row-count.md`. Neither command reaches
-   this path through Knex's own API. */
+   `../postgrejs/.claude/local/command-tag-row-count.md`. Neither command
+   reaches this path through Knex's own API. */
 export function toQueryResult<R = Row>(
   result: CommandResult,
   format: 'binary' | 'text' = 'binary',
